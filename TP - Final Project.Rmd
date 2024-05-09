@@ -1,0 +1,551 @@
+---
+title: "Argentina Performance at World Cup and Friendlies"
+author: " Tuan Pham - STAT Infererence"
+date: "2023-11-30"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r include=FALSE}
+library(tidyverse)
+library(broom.mixed)
+library(forcats)
+library(dplyr)
+
+```
+
+
+```{r, echo=FALSE}
+international.games <- read.csv("results.csv")
+head(international.games)
+
+```
+
+Part 3: Permutation Test
+
+**Claim: Perform the permutation test to check whether the Argentina national team has scored more in the friendly games than in the World Cup.**
+
+</br>
+
+`Hypothesis`
+
+> Ho: mean goals scored at Friendly games - mean goals scored at World Cup <= 0
+
+> Ha: mean goals scored at Friendly games - mean goals scored at World Cup > 0
+
+</br>
+</br>
+
+
+`Argentina Games at World Cup`
+
+```{r}
+Arg.WC <- international.games %>% 
+  filter(tournament == 'FIFA World Cup') %>% 
+  filter(home_team == 'Argentina' | away_team == 'Argentina')
+```
+
+</br>
+
+`Argentina Goals Scored at World Cup`
+
+```{r}
+Arg.goal.scored.as.Home.Team.inWC <- Arg.WC %>% 
+  filter(home_team == 'Argentina') %>% 
+  dplyr::select('Goal scored' = home_score)
+Arg.goal.scored.as.Away.Team.inWC <- Arg.WC %>% 
+  filter(away_team == 'Argentina') %>% 
+  dplyr::select('Goal scored' = away_score)
+Arg.goal.scored.WC <- rbind(Arg.goal.scored.as.Home.Team.inWC, Arg.goal.scored.as.Away.Team.inWC)
+Arg.goal.scored.WC <- subset(Arg.goal.scored.WC, drop = TRUE)
+mean(Arg.goal.scored.WC)
+```
+
+</br>
+
+`Argentina Games at Friendlies`
+
+```{r}
+Arg.friendly <- international.games %>% 
+  filter(tournament == 'Friendly') %>% 
+  filter(home_team == 'Argentina' | away_team == 'Argentina')
+```
+
+</br>
+
+`Argentina Goal Scored at Friendly Games`
+
+```{r}
+Arg.goal.scored.as.Home.Team.inFL <- Arg.friendly %>% 
+  filter(home_team == 'Argentina') %>% 
+  dplyr::select('Goal scored' = home_score)
+Arg.goal.scored.as.Away.Team.inFL <- Arg.friendly %>% 
+  filter(away_team == 'Argentina') %>% 
+  dplyr::select('Goal scored' = away_score)
+Arg.goal.scored.FL <- rbind(Arg.goal.scored.as.Home.Team.inFL, Arg.goal.scored.as.Away.Team.inFL)
+Arg.goal.scored.FL <- subset(Arg.goal.scored.FL, drop = TRUE)
+mean(Arg.goal.scored.FL)
+
+``` 
+
+</br>
+
+```{r}
+Arg.goal.scored <- c(Arg.goal.scored.FL, Arg.goal.scored.WC) # Combine 2 vectors in preparing for resampling
+
+```
+
+</br>
+</br>
+
+`Data Normality Check`
+
+```{r}
+par(mfrow=c(1,2))
+qqnorm(Arg.goal.scored.WC)
+qqline(Arg.goal.scored.WC)
+
+qqnorm(Arg.goal.scored.FL)
+qqline(Arg.goal.scored.FL)
+```
+
+> Data are not normal for both World Cup Games and frienly ones.
+
+</br>
+
+`Mean difference between Argentina goals scored in World Cup vs Friendly games`
+
+```{r}
+Arg.mean.goal.dff.observed <- mean(Arg.goal.scored.FL) - mean(Arg.goal.scored.WC)
+Arg.mean.goal.dff.observed
+```
+
+</br>
+</br>
+
+`Resampling by Permutation`
+
+```{r}
+ N <- 10^5 - 1  #set number of times to repeat this process
+ result <- numeric(N) # space to save the random differences
+ 
+ for(i in 1:N) {
+  index <- sample(456, size = 368, replace = FALSE) # sample of numbers from 1:30
+  result[i] <- mean(Arg.goal.scored[index]) - mean(Arg.goal.scored[-index])
+}
+```
+
+</br>
+</br>
+
+`Resampling Plot`
+
+```{r}
+hist(result, xlab = "Difference between Mean Goals Scored by Argentina in Friendly Games vs World Cup", main = "Permutation distribution for Goal Scored", col = 'dodgerblue')
+abline(v = Arg.mean.goal.dff.observed, col = "White", lty = 5)
+```
+
+</br>
+</br>
+
+`Obtain the p-value`
+
+```{r}
+(sum(result >= Arg.mean.goal.dff.observed) + 1)/(N + 1)  #P-value
+```
+
+> **Since P-value is greater than the 0.05 significance level, we failed to reject the null.  Consequently, we don't have sufficient evidence to claim that there's a statistically significant difference between the mean goals scored at friendly games versus those scored at the World Cup based on the data analyzed.**
+
+> **Typically, it's expected that strong national teams such as Argentina would score more goals in friendly games compared to crucial tournaments like the World Cup. However, surprisingly, the statistical data doesn't provide evidence to back up this belief.**
+
+</br>
+
+`Percent Bias`
+
+```{r}
+Arg.bias <- 100 * ((mean(Arg.goal.scored.FL) - mean(Arg.goal.scored.WC))/mean(Arg.goal.scored.FL))
+Arg.bias
+```
+
+
+> The bias between the two subjects' datasets is 2.96%, which indicates the difference in sample sizes contributes to a small bias in comparison of mean between two groups.
+
+</br>
+</br>
+</br>
+
+`Brazil Games at World Cup`
+
+```{r}
+Bra.WC <- international.games %>% 
+  filter(tournament == 'FIFA World Cup') %>% 
+  filter(home_team == 'Brazil' | away_team == 'Brazil')
+```
+
+</br>
+
+`Brazil Goals Scored at World Cup`
+
+```{r}
+Bra.goal.scored.as.Home.Team.inWC <- Bra.WC %>% 
+  filter(home_team == 'Brazil') %>% 
+  dplyr::select('Goal scored' = home_score)
+
+Bra.goal.scored.as.Away.Team.inWC <- Bra.WC %>% 
+  filter(away_team == 'Brazil') %>% 
+  dplyr::select('Goal scored' = away_score)
+
+Bra.goal.scored.WC <- rbind(Bra.goal.scored.as.Home.Team.inWC, Bra.goal.scored.as.Away.Team.inWC)
+Bra.goal.scored.WC <- subset(Bra.goal.scored.WC, drop = TRUE)
+mean(Bra.goal.scored.WC)
+```
+
+</br>
+</br>
+
+`Brazil Games at Friendlies`
+
+```{r}
+Bra.friendly <- international.games %>% 
+  filter(tournament == 'Friendly') %>% 
+  filter(home_team == 'Brazil' | away_team == 'Brazil')
+```
+
+</br>
+
+`Brazil Goal Scored at Friendly Games`
+
+```{r}
+Bra.goal.scored.as.Home.Team.inFL <- Bra.friendly %>% 
+  filter(home_team == 'Brazil') %>% 
+  dplyr::select('Goal scored' = home_score)
+
+Bra.goal.scored.as.Away.Team.inFL <- Bra.friendly %>% 
+  filter(away_team == 'Brazil') %>% 
+  dplyr::select('Goal scored' = away_score)
+
+Bra.goal.scored.FL <- rbind(Bra.goal.scored.as.Home.Team.inFL, Bra.goal.scored.as.Away.Team.inFL)
+Bra.goal.scored.FL <- subset(Bra.goal.scored.FL, drop = TRUE)
+mean(Bra.goal.scored.FL)
+
+``` 
+
+
+</br>
+
+`Data Normality Check`
+
+```{r}
+par(mfrow=c(1,2))
+qqnorm(Bra.goal.scored.WC)
+qqline(Bra.goal.scored.WC)
+
+qqnorm(Bra.goal.scored.FL)
+qqline(Bra.goal.scored.FL)
+```
+
+> Data are not normal for both World Cup Games and frienly ones.
+
+</br>
+
+```{r}
+Bra.goal.scored <- c(Bra.goal.scored.FL, Bra.goal.scored.WC) # Combine to vectors of goals
+
+```
+
+</br>
+
+
+`Mean difference between Brazil goals scored in World Cup vs Friendly`
+
+```{r}
+Bra.mean.goal.dff.observed <- mean(Bra.goal.scored.FL) - mean(Bra.goal.scored.WC)
+Bra.mean.goal.dff.observed
+```
+
+</br>
+</br>
+
+
+`Resampling the data`
+
+```{r}
+ N <- 10^5 - 1  #set number of times to repeat this process
+ Bra.result <- numeric(N) # space to save the random differences
+ 
+ for(i in 1:N) {
+  index <- sample(546, size = 432, replace = FALSE) 
+  Bra.result[i] <- mean(Bra.goal.scored[index]) - mean(Bra.goal.scored[-index])
+}
+```
+
+
+</br>
+
+`Plot the samples`
+
+```{r}
+hist(Bra.result, xlab = "Difference between Mean Goal Scored By Brazil at Friendly Games vs World Cup", main = "Permutation distribution for Goal Scored", col = 'darkgreen')
+abline(v = Bra.mean.goal.dff.observed, col = "yellow", lty = 5)
+```
+
+</br>
+
+`P-value`
+
+```{r}
+(sum(result >= Bra.mean.goal.dff.observed) + 1)/(N + 1)  #P-value
+
+```
+
+> Since P-value is greater than the 0.05 significance level, we failed to reject the null. Consequently, we don't have sufficient evidence to claim that there's a statistically significant difference between the mean goals scored at friendly games versus those scored at the World Cup based on the data analyzed.
+
+</br>
+</br>
+
+`Bias percentage`
+
+```{r}
+Bra.bias <- 100 * ((mean(Bra.goal.scored.FL) - mean(Bra.goal.scored.WC))/mean(Bra.goal.scored.FL))
+Bra.bias
+```
+
+> The bias between the two subjects' datasets is 5.85%, which indicates the difference in sample sizes contributes to a small bias in comparison of mean between two groups.
+
+</br>
+</br>
+</br>
+
+**After analyzing the data, we haven't found enough evidence to assert a statistically significant difference between the average goals scored in friendly games compared to those scored at the World Cup. Our examination of the two most prominent South American teams in World Cup history yielded notably similar results. Now, let's shift our focus to one of Europe's most renowned teams in World Cup history, the Germany National Team.** 
+
+</br>
+</br>
+</br>
+
+`Germany Games at World Cup`
+
+```{r}
+Ger.WC <- international.games %>% 
+  filter(tournament == 'FIFA World Cup') %>% 
+  filter(home_team == 'Germany' | away_team == 'Germany')
+```
+
+</br>
+</br>
+
+`Germany Goals Scored at World Cup`
+
+```{r}
+Ger.goal.scored.as.Home.Team.inWC <- Ger.WC %>% 
+  filter(home_team == 'Germany') %>% 
+  dplyr::select('Goal scored' = home_score)
+
+Ger.goal.scored.as.Away.Team.inWC <- Ger.WC %>% 
+  filter(away_team == 'Germany') %>% 
+  dplyr::select('Goal scored' = away_score)
+
+Ger.goal.scored.WC <- rbind(Ger.goal.scored.as.Home.Team.inWC, Ger.goal.scored.as.Away.Team.inWC)
+Ger.goal.scored.WC <- subset(Ger.goal.scored.WC, drop = TRUE)
+mean(Ger.goal.scored.WC)
+```
+
+</br>
+</br>
+
+`Germany Games at Friendly Games`
+
+```{r}
+Ger.friendly <- international.games %>% 
+  filter(tournament == 'Friendly') %>% 
+  filter(home_team == 'Germany' | away_team == 'Germany')
+```
+
+</br>
+
+`Germany Goals Scored at Friendly Games`
+
+```{r}
+Ger.goal.scored.as.Home.Team.inFL <- Ger.friendly %>% 
+  filter(home_team == 'Germany') %>% 
+  dplyr::select('Goal scored' = home_score)
+
+Ger.goal.scored.as.Away.Team.inFL <- Ger.friendly %>% 
+  filter(away_team == 'Germany') %>% 
+  dplyr::select('Goal scored' = away_score)
+
+Ger.goal.scored.FL <- rbind(Ger.goal.scored.as.Home.Team.inFL, Ger.goal.scored.as.Away.Team.inFL)
+
+Ger.goal.scored.FL <- subset(Ger.goal.scored.FL, drop = TRUE)
+mean(Ger.goal.scored.FL)
+```
+
+</br>
+</br>
+
+`Data Normality Check`
+
+```{r}
+par(mfrow=c(1,2))
+qqnorm(Ger.goal.scored.WC)
+qqline(Ger.goal.scored.WC)
+
+qqnorm(Ger.goal.scored.FL)
+qqline(Ger.goal.scored.FL)
+```
+
+> Data are not normal for both World Cup Games and frienly ones.
+
+</br>
+
+```{r}
+Ger.goal.scored <- c(Ger.goal.scored.FL, Ger.goal.scored.WC) #Combine two vectors, prepare for resampling
+```
+
+</br>
+
+`Obtain the mean difference of the observation`
+
+```{r}
+Ger.mean.goal.dff.observed <- mean(Ger.goal.scored.FL) - mean(Ger.goal.scored.WC)
+Ger.mean.goal.dff.observed
+```
+
+</br>
+</br>
+
+`Resampling the data`
+
+```{r}
+ N <- 10^5 - 1  #set number of times to repeat this process
+ Ger.result <- numeric(N) # space to save the random differences
+ 
+ for(i in 1:N) {
+  index <- sample(691, size = 579, replace = FALSE) 
+  Ger.result[i] <- mean(Ger.goal.scored[index]) - mean(Ger.goal.scored[-index])
+}
+```
+
+</br>
+</br>
+
+`Plot the samples`
+
+```{r}
+hist(Ger.result, xlab = "Difference between Mean Goal Scored by Germany at Friendly Games vs World Cup", main = "Permutation distribution for Goals Scored", col = 'White')
+abline(v = Ger.mean.goal.dff.observed, col = "Red", lty = 5)
+```
+
+</br>
+
+`Obtain p-value`
+
+```{r}
+(sum(result >= Ger.mean.goal.dff.observed) + 1)/(N + 1)  #P-value
+
+```
+
+> Since P-value is greater than the 0.05 significance level, we again failed to reject the null. Consequently, we don't have sufficient evidence to claim that there's a statistically significant difference between the mean goals scored at friendly games versus those scored at the World Cup based on the data analyzed.
+
+</br>
+</br>
+
+`Bias percentage between two datasets`
+
+```{r}
+Ger.bias <- 100 * ((mean(Ger.goal.scored.FL) - mean(Ger.goal.scored.WC))/mean(Ger.goal.scored.FL))
+Ger.bias
+```
+> The bias between the two subjects' datasets is 3.74%, which indicates the difference in sample sizes contributes to a small bias in comparison of mean between two groups.
+
+</br>
+</br>
+</br>
+
+
+```{r}
+
+library(ggplot2)
+
+Argentina <- Arg.goal.scored.WC
+Brazil <- Bra.goal.scored.WC
+Germany <- Ger.goal.scored.WC
+
+data_list <- list(Argentina = Argentina, Brazil = Brazil, Germany = Germany)
+
+data_combined <- data.frame(
+  Group = rep(names(data_list), lengths(data_list)),
+  Value = unlist(data_list)
+)
+
+ggplot(data_combined, aes(x = Group, y = Value, fill = Group)) +
+  geom_boxplot() +
+  labs(title = "Goals scored at World Cup",
+       x = "National Team",
+       y = "Goals Scored") +
+  scale_fill_manual(values = c("dodgerblue", "darkgreen", "white")) +
+  theme_minimal()
+
+```
+
+```{r}
+library(ggplot2)
+
+Argentina <- Arg.goal.scored.FL
+Brazil <- Bra.goal.scored.FL
+Germany <- Ger.goal.scored.FL
+
+data_list <- list(Argentina = Argentina, Brazil = Brazil, Germany = Germany)
+
+data_combined <- data.frame(
+  Group = rep(names(data_list), lengths(data_list)),
+  Value = unlist(data_list)
+)
+
+ggplot(data_combined, aes(x = Group, y = Value, fill = Group)) +
+  geom_boxplot() +
+  labs(title = "Goals scored at Friendlies",
+       x = "National Team",
+       y = "Goals Scored") +
+  scale_fill_manual(values = c("dodgerblue", "darkgreen", "white")) +
+  theme_minimal()
+```
+
+
+```{r}
+Arg.total <- sum(Arg.goal.scored.WC) + sum(Arg.goal.scored.FL)
+Arg.total
+Arg.proportion.WC <- sum(Arg.goal.scored.WC)/Arg.total
+Arg.proportion.WC
+```
+
+
+
+```{r}
+Bra.total <- sum(Bra.goal.scored.WC) + sum(Bra.goal.scored.FL)
+Bra.total
+Bra.proportion.WC <- sum(Bra.goal.scored.WC)/Bra.total
+Bra.proportion.WC
+```
+
+
+```{r}
+Ger.total <- sum(Ger.goal.scored.WC) + sum(Ger.goal.scored.FL)
+Ger.total
+Ger.proportion.WC <- sum(Ger.goal.scored.WC)/Ger.total
+Ger.proportion.WC
+```
+
+
+
+
+### Conclusion:
+
+**The World Cup holds the highest prestige among tournaments globally, leading us to instinctively assume that scoring during this event is more challenging compared to friendly games. However, based on the data analysis conducted among the three most successful teams in World Cup history, we can infer that there's no statistically significant evidence supporting this assertion. Whether playing at friendly games or the World Cup, the difficulty in scoring goals appears to be increasingly similar and without significant distinction.**
+
+
